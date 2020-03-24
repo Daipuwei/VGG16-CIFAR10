@@ -144,7 +144,7 @@ class VGG16(object):
 
             self.merged = tf.summary.merge_all()
             self.writer = tf.summary.FileWriter(log_dir, sess.graph)
-            self.writer1 = tf.summary.FileWriter(os.path.join("./tf_dir"), sess.graph)
+            #self.writer1 = tf.summary.FileWriter(os.path.join("./tf_dir"), sess.graph)
 
             print('\n----------- start to train -----------\n')
 
@@ -169,7 +169,7 @@ class VGG16(object):
                                                 feed_dict={self.image_input:batch_images,
                                                             self.real_label:batch_labels})
                     self.writer.add_summary(make_summary('learning_rate', learning_rate),global_step=global_step)
-                    self.writer1.add_summary(make_summary('learning_rate', learning_rate), global_step=global_step)
+                    #self.writer1.add_summary(make_summary('learning_rate', learning_rate), global_step=global_step)
 
                     # 更新训练损失与训练精度
                     epoch_loss_avg.update(train_loss,1)
@@ -185,8 +185,8 @@ class VGG16(object):
                 self.writer.add_summary(make_summary('train/train_loss', epoch_loss_avg.average),global_step=ep+1)
                 self.writer.add_summary(make_summary('accuracy/train_accuracy', epoch_accuracy.average),global_step=ep+1)
 
-                self.writer1.add_summary(make_summary('train/train_loss', epoch_loss_avg.average),global_step=ep+1)
-                self.writer1.add_summary(make_summary('accuracy/train_accuracy', epoch_accuracy.average),global_step=ep+1)
+                #self.writer1.add_summary(make_summary('train/train_loss', epoch_loss_avg.average),global_step=ep+1)
+                #self.writer1.add_summary(make_summary('accuracy/train_accuracy', epoch_accuracy.average),global_step=ep+1)
 
                 if (ep+1) % interval == 0:
                     # 评估模型在验证集上的性能
@@ -242,8 +242,8 @@ class VGG16(object):
         self.writer.add_summary(make_summary('val/val_loss', epoch_loss_avg.average),global_step=ep)
         self.writer.add_summary(make_summary('accuracy/val_accuracy', epoch_accuracy.average),global_step=ep)
 
-        self.writer1.add_summary(make_summary('val/val_loss', epoch_loss_avg.average),global_step=ep)
-        self.writer1.add_summary(make_summary('accuracy/val_accuracy', epoch_accuracy.average),global_step=ep)
+        #self.writer1.add_summary(make_summary('val/val_loss', epoch_loss_avg.average),global_step=ep)
+        #self.writer1.add_summary(make_summary('accuracy/val_accuracy', epoch_accuracy.average),global_step=ep)
         return epoch_loss_avg.average,epoch_accuracy.average
 
     def test_single_image(self,image_path,weight_path):
