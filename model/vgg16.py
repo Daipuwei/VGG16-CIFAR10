@@ -36,15 +36,20 @@ class VGG16(object):
 
         # 定义VGG16的前向传播过程
         self.build_model()
+        """
         self.model.compile(optimizer=K.optimizers.SGD(learning_rate=self.cfg.init_learning_rate,
                                                       momentum=self.cfg.momentum_rate),
                            loss=categorical_crossentropy_loss)
+        """
+        self.model.compile(optimizer=K.optimizers.Adam(learning_rate=self.cfg.init_learning_rate),
+                           loss="categorical_crossentropy")
 
         # 定义损失函数与精度
         self.loss = categorical_crossentropy_loss(self.real_label, self.pred_label)
         self.accuracy = categorical_accuracy(self.real_label, self.pred_label)
 
         # 定义学习率、优化器和训练过程
+        """
         self.learning_rate = tf.train.exponential_decay(learning_rate=self.init_learning_rate,
                                                         global_step=self.global_step,
                                                         decay_steps=self.cfg.decay_step,
@@ -52,6 +57,8 @@ class VGG16(object):
                                                         staircase=True)
         self.optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate,
                                                     momentum=self.cfg.momentum_rate)
+        """
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
         self.train_op = self.optimizer.minimize(self.loss, global_step=self.global_step)
 
         # 定义模型保存类与加载类
