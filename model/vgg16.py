@@ -288,7 +288,7 @@ class VGG16(object):
 
             # 导入图像,并扩充一维以满足tf中输入张量形状要求
             image = cv2.imread(image_path)
-            image = cv2.resize(image,(224,224))
+            image = cv2.resize(image,(self.cfg.image_size,self.cfg.image_size))
             batch_image = np.expand_dims(image,axis=0)
             print(np.shape(batch_image))
 
@@ -324,7 +324,7 @@ class VGG16(object):
             batch_image_paths = []
             for image_name in os.listdir(image_dir):
                 image_path = os.path.join(image_dir,image_name)
-                image = cv2.resize(image, (224, 224))
+                image = cv2.resize(image, (self.cfg.image_size,self.cfg.image_size))
                 batch_image_paths.append(image_path)
                 batch_images.append(cv2.imread(image_path))
             batch_images = np.array(batch_images)

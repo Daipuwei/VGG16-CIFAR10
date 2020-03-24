@@ -26,7 +26,7 @@ def run_main():
     datagen = image_data.flow_from_directory(dataset_dir,
                                              class_mode='categorical',
                                              batch_size = 1,
-                                             target_size=(224, 224),
+                                             target_size=(cfg.image_size,cfg.image_size),
                                              shuffle=False)
 
     # 初始化相关参数

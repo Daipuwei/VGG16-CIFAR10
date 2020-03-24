@@ -16,7 +16,7 @@ def run_main():
        这是主函数
     """
     # 初始化参数配置类
-    pre_model_path = None
+    pre_model_path = os.path.abspath("./pre_weight/vgg16_weights_tf_dim_ordering_tf_kernels.h5")
     cfg = config(pre_model_path=pre_model_path)
 
     # 构造训练集和测试集数据生成器
@@ -33,12 +33,12 @@ def run_main():
     train_datagen = image_data.flow_from_directory(train_dataset_dir,
                                                    class_mode='categorical',
                                                    batch_size = cfg.batch_size,
-                                                   target_size=(224,224),
+                                                   target_size=(32,32),
                                                    shuffle=True)
     val_datagen = image_data.flow_from_directory(val_dataset_dir,
                                                  class_mode='categorical',
                                                  batch_size=cfg.batch_size,
-                                                 target_size=(224, 224),
+                                                 target_size=(32, 32),
                                                  shuffle=True)
 
     # 初始化相关参数
