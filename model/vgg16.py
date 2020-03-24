@@ -35,21 +35,24 @@ class VGG16(object):
         self.init_learning_rate = tf.Variable(tf.constant(self.cfg.init_learning_rate))         # 初始学习率
 
         # 定义VGG16的前向传播过程
-        self.pred_label = self.build_model()
+        self.build_model()
+        self.model.compile(optimizer=K.optimizers.SGD(learning_rate=self.cfg.init_learning_rate,
+                                                      momentum=self.cfg.momentum_rate),
+                           loss=categorical_crossentropy_loss)
+
+        # 定义损失函数与精度
+        self.loss = categorical_crossentropy_loss(self.real_label, self.pred_label)
+        self.accuracy = categorical_accuracy(self.real_label, self.pred_label)
 
         # 定义学习率、优化器和训练过程
         self.learning_rate = tf.train.exponential_decay(learning_rate=self.init_learning_rate,
                                                         global_step=self.global_step,
-                                                        decay_step=self.cfg.decay_step,
+                                                        decay_steps=self.cfg.decay_step,
                                                         decay_rate=self.cfg.decay_rate,
                                                         staircase=True)
         self.optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate,
                                                     momentum=self.cfg.momentum_rate)
         self.train_op = self.optimizer.minimize(self.loss, global_step=self.global_step)
-
-        # 定义损失函数与精度
-        self.loss = categorical_crossentropy_loss(self.real_label,self.pred_label)
-        self.accuracy = categorical_accuracy(self.real_label,self.pred_label)
 
         # 定义模型保存类与加载类
         self.saver_save = tf.train.Saver(max_to_keep=100)  # 设置最大保存检测点个数为周期数
@@ -92,9 +95,10 @@ class VGG16(object):
         x = K.layers.Flatten(name='flatten')(x)
         x = K.layers.Dense(4096, activation='relu', name='fc1')(x)
         x = K.layers.Dense(4096, activation='relu', name='fc2')(x)
-        x = K.layers.Dense(self.cfg.label_num, activation='softmax', name='pred_label')(x)
+        self.pred_label = K.layers.Dense(self.cfg.label_num, activation='softmax', name='pred_label')(x)
 
-        return x
+        self.model = K.Model(self.image_input,self.pred_label)
+        self.model.summary()
 
     def train(self,train_datagen,val_datagen,train_iter_num,val_iter_num,interval,pre_model_path=None):
         """
@@ -137,14 +141,19 @@ class VGG16(object):
             sess.run(tf.global_variables_initializer())
 
             # 加载预训练模型
-            if pre_model_path is not None:              # pre_model_path的地址写到.ckpt
-                saver_restore = tf.train.import_meta_graph(pre_model_path+".meta")
-                saver_restore.restore(sess,pre_model_path)
+            if pre_model_path is not None:
+                if ".ckpt" in pre_model_path:           # pre_model_path的地址写到.ckpt
+                    saver_restore = tf.train.import_meta_graph(pre_model_path+".meta")
+                    saver_restore.restore(sess,pre_model_path)
+                    print(1)
+                elif ".h5" in pre_model_path:
+                    self.model.load_weights(pre_model_path,by_name=True)
+                    print(2)
                 print("restore model from : %s" % (pre_model_path))
 
             self.merged = tf.summary.merge_all()
             self.writer = tf.summary.FileWriter(log_dir, sess.graph)
-            #self.writer1 = tf.summary.FileWriter(os.path.join("./tf_dir"), sess.graph)
+            self.writer1 = tf.summary.FileWriter(os.path.join("./tf_dir"), sess.graph)
 
             print('\n----------- start to train -----------\n')
 
@@ -169,7 +178,7 @@ class VGG16(object):
                                                 feed_dict={self.image_input:batch_images,
                                                             self.real_label:batch_labels})
                     self.writer.add_summary(make_summary('learning_rate', learning_rate),global_step=global_step)
-                    #self.writer1.add_summary(make_summary('learning_rate', learning_rate), global_step=global_step)
+                    self.writer1.add_summary(make_summary('learning_rate', learning_rate), global_step=global_step)
 
                     # 更新训练损失与训练精度
                     epoch_loss_avg.update(train_loss,1)
@@ -185,8 +194,8 @@ class VGG16(object):
                 self.writer.add_summary(make_summary('train/train_loss', epoch_loss_avg.average),global_step=ep+1)
                 self.writer.add_summary(make_summary('accuracy/train_accuracy', epoch_accuracy.average),global_step=ep+1)
 
-                #self.writer1.add_summary(make_summary('train/train_loss', epoch_loss_avg.average),global_step=ep+1)
-                #self.writer1.add_summary(make_summary('accuracy/train_accuracy', epoch_accuracy.average),global_step=ep+1)
+                self.writer1.add_summary(make_summary('train/train_loss', epoch_loss_avg.average),global_step=ep+1)
+                self.writer1.add_summary(make_summary('accuracy/train_accuracy', epoch_accuracy.average),global_step=ep+1)
 
                 if (ep+1) % interval == 0:
                     # 评估模型在验证集上的性能
@@ -197,11 +206,13 @@ class VGG16(object):
                     str =  "Epoch{:03d}_val_loss_{:.3f},val_accuracy_{:.3%}".format(ep+1,val_loss,val_accuracy)
                     print(str)
 
-                    if val_accuracy > val_acc_max:              # 验证精度达到当前最大，保存模型
+                    if val_accuracy >= val_acc_max:              # 验证精度达到当前最大，保存模型
                         val_acc_max = val_accuracy
                         self.saver_save.save(sess,os.path.join(checkpoint_dir,str+".ckpt"))
+                        print(1)
+                        self.model.save(os.path.join(checkpoint_dir,str+".h5"))
+                        print(2)
 
-            # 保存训练与验证结果
             # 保存训练与验证结果
             path = os.path.join(result_dir, "loss.jpg")
             plot_loss(np.arange(1, len(train_loss_results) + 1),
@@ -242,8 +253,8 @@ class VGG16(object):
         self.writer.add_summary(make_summary('val/val_loss', epoch_loss_avg.average),global_step=ep)
         self.writer.add_summary(make_summary('accuracy/val_accuracy', epoch_accuracy.average),global_step=ep)
 
-        #self.writer1.add_summary(make_summary('val/val_loss', epoch_loss_avg.average),global_step=ep)
-        #self.writer1.add_summary(make_summary('accuracy/val_accuracy', epoch_accuracy.average),global_step=ep)
+        self.writer1.add_summary(make_summary('val/val_loss', epoch_loss_avg.average),global_step=ep)
+        self.writer1.add_summary(make_summary('accuracy/val_accuracy', epoch_accuracy.average),global_step=ep)
         return epoch_loss_avg.average,epoch_accuracy.average
 
     def test_single_image(self,image_path,weight_path):
@@ -257,10 +268,16 @@ class VGG16(object):
             # 初始化变量
             sess.run(tf.global_variables_initializer())
 
-            # 导入预训练模型
-            saver_restore = tf.train.import_meta_graph(weight_path + ".meta")
-            saver_restore.restore(sess, weight_path)
-            print(1)
+            # 加载预训练模型
+            if weight_path is not None:
+                if ".ckpt" in weight_path:          # pre_model_path的地址写到.ckpt
+                    saver_restore = tf.train.import_meta_graph(weight_path + ".meta")
+                    saver_restore.restore(sess, weight_path)
+                    print(1)
+                elif ".h5" in weight_path:
+                    self.model.load_weights(weight_path, by_name=True)
+                    print(2)
+                print("restore model from : %s" % (weight_path))
 
             # 导入图像,并扩充一维以满足tf中输入张量形状要求
             image = cv2.imread(image_path)
@@ -284,9 +301,16 @@ class VGG16(object):
             # 初始化变量
             sess.run(tf.global_variables_initializer())
 
-            # 导入预训练模型
-            saver_restore = tf.train.import_meta_graph(weight_path + ".meta")
-            saver_restore.restore(sess, weight_path)
+            # 加载预训练模型
+            if weight_path is not None:
+                if ".ckpt" in weight_path:          # pre_model_path的地址写到.ckpt
+                    saver_restore = tf.train.import_meta_graph(weight_path + ".meta")
+                    saver_restore.restore(sess, weight_path)
+                    print(1)
+                elif ".h5" in weight_path:
+                    self.model.load_weights(weight_path, by_name=True)
+                    print(2)
+                print("restore model from : %s" % (weight_path))
 
             # 导入图像,并扩充一维以满足tf中输入张量形状要求
             batch_images = []
@@ -317,9 +341,16 @@ class VGG16(object):
             # 初始化变量
             sess.run(tf.global_variables_initializer())
 
-            # 导入预训练模型
-            saver_restore = tf.train.import_meta_graph(weight_path + ".meta")
-            saver_restore.restore(sess, weight_path)
+            # 加载预训练模型
+            if weight_path is not None:
+                if ".ckpt" in weight_path:          # pre_model_path的地址写到.ckpt
+                    saver_restore = tf.train.import_meta_graph(weight_path + ".meta")
+                    saver_restore.restore(sess, weight_path)
+                    print(1)
+                elif ".h5" in weight_path:
+                    self.model.load_weights(weight_path, by_name=True)
+                    print(2)
+                print("restore model from : %s" % (weight_path))
 
             loss = AverageMeter()
             accuracy = AverageMeter()
