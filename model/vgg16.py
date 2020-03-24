@@ -264,6 +264,7 @@ class VGG16(object):
 
             # 导入图像,并扩充一维以满足tf中输入张量形状要求
             image = cv2.imread(image_path)
+            image = cv2.resize(image,(224,224))
             batch_image = np.expand_dims(image,axis=0)
             print(np.shape(batch_image))
 
@@ -292,6 +293,7 @@ class VGG16(object):
             batch_image_paths = []
             for image_name in os.listdir(image_dir):
                 image_path = os.path.join(image_dir,image_name)
+                image = cv2.resize(image, (224, 224))
                 batch_image_paths.append(image_path)
                 batch_images.append(cv2.imread(image_path))
             batch_images = np.array(batch_images)
@@ -302,3 +304,35 @@ class VGG16(object):
             batch_pred_labels = np.argmax(batch_pred_labels,axis=-1).flatten()
             for image_path,pred_label in zip(batch_image_paths,batch_pred_labels):
                 print("%s is predited as %s" % (image_path, self.cfg.label_dict[pred_label]))
+
+    def eval_on_dataset(self,datagen,batch_num,weight_path):
+        """
+        这是评估模型在验证集上的性能的函数
+        :param sess: tf的会话变量
+        :param datagen: 数据集生成器
+        :param batch_num: 数据集批量个数
+        :param weight_path: 模型路径
+        """
+        with tf.Session() as sess:
+            # 初始化变量
+            sess.run(tf.global_variables_initializer())
+
+            # 导入预训练模型
+            saver_restore = tf.train.import_meta_graph(weight_path + ".meta")
+            saver_restore.restore(sess, weight_path)
+
+            loss = AverageMeter()
+            accuracy = AverageMeter()
+            for i in np.arange(batch_num):
+                # 获取小批量数据集及其图像标签与域标签
+                batch_images, batch_labels = datagen.__next__()
+
+                # 在验证阶段只利用目标域数据及其标签进行测试,计算模型在验证集上相关指标的值
+                val_loss, val_acc = sess.run([self.loss, self.accuracy],
+                                                feed_dict={self.image_input: batch_images,
+                                                        self.real_label: batch_labels})
+                # 更新损失与精度的平均值
+                loss.update(val_loss, 1)
+                accuracy.update(val_acc, 1)
+
+            print("eval on this dataset, loss is {:.3f} , accuracy is {:.3f%}".format(loss.average,accuracy.average))

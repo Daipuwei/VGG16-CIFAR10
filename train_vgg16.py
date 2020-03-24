@@ -33,10 +33,12 @@ def run_main():
     train_datagen = image_data.flow_from_directory(train_dataset_dir,
                                                    class_mode='categorical',
                                                    batch_size = cfg.batch_size,
+                                                   target_size=(224,224),
                                                    shuffle=True)
     val_datagen = image_data.flow_from_directory(val_dataset_dir,
                                                  class_mode='categorical',
                                                  batch_size=cfg.batch_size,
+                                                 target_size=(224, 224),
                                                  shuffle=True)
 
     # 初始化相关参数
@@ -44,7 +46,7 @@ def run_main():
     train_iter_num = train_datagen.samples // cfg.batch_size       # 训练集1个epoch的迭代次数
     val_iter_num = val_datagen.samples // cfg.batch_size           # 测试集1个epoch的迭代次数
 
-    # 初始化UNet，并进行训练
+    # 初始化VGG16，并进行测试批量图像
     vgg16 = VGG16(cfg)
     vgg16.train(train_generator = train_datagen,
                val_generatort = val_datagen,
