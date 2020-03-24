@@ -58,7 +58,7 @@ class VGG16(object):
         self.optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate,
                                                     momentum=self.cfg.momentum_rate)
         """
-        self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=self.cfg.init_learning_rate)
         self.train_op = self.optimizer.minimize(self.loss, global_step=self.global_step)
 
         # 定义模型保存类与加载类
