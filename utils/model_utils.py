@@ -15,7 +15,7 @@ def categorical_crossentropy_loss(y_true,y_pred):
     :param y_pred:预测标签
     :return:
     """
-    return tf.nn.softmax_cross_entropy_with_logits_v2(y_true,y_pred)
+    return tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(y_true,y_pred))
 
 def categorical_accuracy(y_true,y_pred):
     """
