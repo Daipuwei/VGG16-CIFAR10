@@ -41,7 +41,7 @@ def categorical_accuracy(y_true,y_pred):
     :param y_pred: 预测标签
     :return:
     """
-    return K.metrics.categorical_crossentropy(y_true,y_pred)
+    return K.metrics.categorical_accuracy(y_true,y_pred)
 
 # 这是数据平均类
 class AverageMeter(object):

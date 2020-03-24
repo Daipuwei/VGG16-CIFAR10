@@ -48,12 +48,12 @@ def run_main():
 
     # 初始化VGG16，并进行测试批量图像
     vgg16 = VGG16(cfg)
-    vgg16.train(train_generator = train_datagen,
-               val_generatort = val_datagen,
-               interval = interval,
-               train_iter_num = train_iter_num,
-               val_iter_num = val_iter_num,
-               pre_model_path = cfg.pre_model_path)
+    vgg16.train(train_datagen=train_datagen,
+                val_datagen=val_datagen,
+                train_iter_num=train_iter_num,
+                val_iter_num=val_iter_num,
+                interval=interval,
+                pre_model_path=cfg.pre_model_path)
 
 if __name__ == '__main__':
     run_main()
