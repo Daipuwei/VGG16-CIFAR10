@@ -180,12 +180,12 @@ class VGG16(object):
                     batch_images, batch_labels = train_datagen.__next__()#train_source_datagen.next_batch()
 
                     # 前向传播,计算损失及其梯度
-                    op,train_loss,train_acc,learning_rate,global_step = \
-                                    sess.run([self.train_op,self.loss,self.accuracy,self.learning_rate,self.global_step],
+                    op,train_loss,train_acc = \
+                                    sess.run([self.train_op,self.loss,self.accuracy],
                                                 feed_dict={self.image_input:batch_images,
                                                             self.real_label:batch_labels})
-                    self.writer.add_summary(make_summary('learning_rate', learning_rate),global_step=global_step)
-                    self.writer1.add_summary(make_summary('learning_rate', learning_rate), global_step=global_step)
+                    #self.writer.add_summary(make_summary('learning_rate', learning_rate),global_step=global_step)
+                    #self.writer1.add_summary(make_summary('learning_rate', learning_rate), global_step=global_step)
 
                     # 更新训练损失与训练精度
                     epoch_loss_avg.update(train_loss,1)
